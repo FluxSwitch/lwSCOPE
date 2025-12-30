@@ -23,8 +23,8 @@ This is purely a hobby project, and it follows an **“extreme function-oriented
 ⚠ **Note!!! → My personal preference > Functionality > Maintainability**  
 ⚠ **注意!!! → 我的個人喜好 > 功能性 > 維護性**
 
-This project is built using *video coding* techniques in my spare time.  
-此專案是我在閒暇之餘使用 video coding 技巧建構的。
+This project is built using *vibe coding* techniques in my spare time.  
+此專案是我在閒暇之餘使用 vibe coding 技巧建構的。
 
 Therefore, the code quality is extremely messy (with limited time, refactoring may be far, far away).  
 因此該專案的程式碼極度混亂（在有限的時間內，重構大概遙遙無期）。
