@@ -72,6 +72,49 @@ if getattr(sys, 'frozen', False):
 else:
     _BASE_DIR = os.path.dirname(__file__)
 
+
+def _get_resource_base_dirs() -> list[str]:
+    """Return candidate roots for bundled/runtime resources."""
+    candidates = []
+
+    meipass = getattr(sys, "_MEIPASS", None)
+    if isinstance(meipass, str) and meipass:
+        candidates.append(meipass)
+
+    exe_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else None
+    if isinstance(exe_dir, str) and exe_dir:
+        candidates.append(exe_dir)
+
+    candidates.append(os.path.dirname(__file__))
+
+    unique_candidates = []
+    seen = set()
+    for path in candidates:
+        norm = os.path.normcase(os.path.normpath(path))
+        if norm in seen:
+            continue
+        seen.add(norm)
+        unique_candidates.append(path)
+    return unique_candidates
+
+
+def _find_first_existing_path(*relative_paths: str) -> str | None:
+    """Search candidate resource roots and return the first matching file path."""
+    for relative_path in relative_paths:
+        if not relative_path:
+            continue
+
+        normalized_input = os.path.expandvars(os.path.expanduser(relative_path))
+        if os.path.isabs(normalized_input) and os.path.isfile(normalized_input):
+            return normalized_input
+
+        split_parts = normalized_input.replace("\\", "/").split("/")
+        for base_dir in _get_resource_base_dirs():
+            candidate = os.path.join(base_dir, *split_parts)
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
 # 3rd-party CustomWindow (3rd_party/CustomWindow)
 _CUSTOMWINDOW_DIR = os.path.join(_BASE_DIR, "3rd_party", "CustomWindow")
 if USE_CUSTOM_WINDOW and _CUSTOMWINDOW_DIR not in sys.path:
@@ -5256,53 +5299,79 @@ class UIHandle:
 
     def load_font(self):
         """載入字體並返回字體物件"""
-        zh_font_path = os.path.join(_BASE_DIR, "font", "NotoSansTC-Regular.ttf")
-        symbol_font_path = os.path.join(_BASE_DIR, "font", "seguiemj.ttf")
+        windows_fonts_dir = os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts")
+
+        zh_font_path = _find_first_existing_path(
+            "font/NotoSansTC-Regular.ttf",
+            "NotoSansTC-Regular.ttf",
+        )
+        symbol_font_path = _find_first_existing_path(
+            "font/seguiemj.ttf",
+            "seguiemj.ttf",
+            "C:/Windows/Fonts/seguiemj.ttf",
+            "C:/Windows/Fonts/Segoeuiemoji.ttf",
+            os.path.join(windows_fonts_dir, "seguiemj.ttf"),
+            os.path.join(windows_fonts_dir, "Segoeuiemoji.ttf"),
+            os.path.join(windows_fonts_dir, "seguisym.ttf"),
+        )
+        system_ui_font_path = _find_first_existing_path(
+            "C:/Windows/Fonts/msjh.ttc",
+            "C:/Windows/Fonts/msjh.ttf",
+            "C:/Windows/Fonts/microsoftjhengheiui.ttf",
+            "C:/Windows/Fonts/segoeui.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            os.path.join(windows_fonts_dir, "msjh.ttc"),
+            os.path.join(windows_fonts_dir, "msjh.ttf"),
+            os.path.join(windows_fonts_dir, "microsoftjhengheiui.ttf"),
+            os.path.join(windows_fonts_dir, "segoeui.ttf"),
+            os.path.join(windows_fonts_dir, "arial.ttf"),
+        )
+
+        def _add_font_with_fallback(font_candidates, size, tag, *, include_chinese=False, include_arrows=False):
+            for font_path in font_candidates:
+                if not font_path:
+                    continue
+                try:
+                    with dpg.font(font_path, size, tag=tag):
+                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
+                        if include_chinese:
+                            dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
+                        if include_arrows:
+                            dpg.add_font_range(0x2190, 0x21FF)
+                            dpg.add_font_range(0x27A0, 0x27BF)
+                    return tag
+                except Exception as exc:
+                    dprint(f"[Font] Failed to load {tag} from {font_path}: {exc}")
+
+            raise RuntimeError(f"No usable font found for '{tag}'. candidates={font_candidates}")
 
         with dpg.font_registry():
-            # 主要UI字體
-            try:
-                if os.path.exists(zh_font_path):
-                    with dpg.font(zh_font_path, 18, tag="zh_font") as zh_font:
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
-                else:
-                    zh_font = dpg.add_font_default(tag="zh_font")
-            except Exception:
-                zh_font = dpg.add_font_default(tag="zh_font")
+            zh_font = _add_font_with_fallback(
+                [zh_font_path, system_ui_font_path],
+                18,
+                "zh_font",
+                include_chinese=True,
+            )
 
-            # FPS顯示專用字體
-            try:
-                if os.path.exists(zh_font_path):
-                    with dpg.font(zh_font_path, 16, tag="fps_font") as _fps_font:
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
-                else:
-                    dpg.add_font_default(tag="fps_font")
-            except Exception:
-                dpg.add_font_default(tag="fps_font")
+            _add_font_with_fallback(
+                [zh_font_path, system_ui_font_path],
+                16,
+                "fps_font",
+            )
 
-            # Special symbol font
-            try:
-                if os.path.exists(symbol_font_path):
-                    with dpg.font(symbol_font_path, 18, tag="symbol_font") as _symbol_font:
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
-                        dpg.add_font_range(0x2190, 0x21FF)  # 箭頭符號區
-                        dpg.add_font_range(0x27A0, 0x27BF)  # 補充箭頭符號區
-                else:
-                    dpg.add_font_default(tag="symbol_font")
-            except Exception:
-                dpg.add_font_default(tag="symbol_font")
+            _add_font_with_fallback(
+                [symbol_font_path, zh_font_path, system_ui_font_path],
+                18,
+                "symbol_font",
+                include_arrows=True,
+            )
 
-            # Window title bar 專用字體（較大）
-            try:
-                if os.path.exists(zh_font_path):
-                    with dpg.font(zh_font_path, 22, tag="title_font") as _title_font:
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Default)
-                        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
-                else:
-                    dpg.add_font_default(tag="title_font")
-            except Exception:
-                dpg.add_font_default(tag="title_font")
+            _add_font_with_fallback(
+                [zh_font_path, system_ui_font_path],
+                22,
+                "title_font",
+                include_chinese=True,
+            )
 
             return zh_font
 
