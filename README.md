@@ -3,7 +3,9 @@ A lightweight oscilloscope/data visualizer made with DearPyGui
 一個以 DearPyGui 製作的輕量級示波器／資料視覺化工具  
 
 ## Demo
-https://github.com/user-attachments/assets/5eec6f1a-bcd9-45b2-9d63-1f41a9dcb3b5
+https://github.com/user-attachments/assets/db268672-d38c-46f9-9661-d5a76764633a
+
+
 
 ## Features
 - Data exchange over UART with customizable baud rate and frame format.  
