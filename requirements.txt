@@ -1,0 +1,13 @@
+# Python 3.13+ required
+
+# GUI framework
+dearpygui==2.1.0
+
+# Numerical computation (vectorized processing)
+numpy>=1.26
+
+# Serial communication (COM port)
+pyserial>=3.5
+
+# Windows native dialogs (win32ui/win32con/win32com)
+pywin32>=306

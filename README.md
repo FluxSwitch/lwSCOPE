@@ -5,17 +5,42 @@ A lightweight oscilloscope/data visualizer made with DearPyGui
 ## Demo
 https://github.com/user-attachments/assets/5eec6f1a-bcd9-45b2-9d63-1f41a9dcb3b5
 
+## Features
+- Data exchange over UART with customizable baud rate and frame format.  
+	以 UART 通訊進行數據交換，通訊速率與格式可自定義。
+- Communication protocol with CRC validation (includes Arduino demo code).  
+	採用含 CRC 校驗的通訊協定（附帶 Arduino 的 demo code）。
+	For protocol definitions, see the Draw.io file in the Protocols folder.
+	通訊協定定義請見Protocols folder中定義的drawio檔
+- Communication health statistics for monitoring.  
+	提供通訊健康程度的統計訊息供監看。
+- Adjustable waveform buffer length (up to 16 channels, 1,000,000 points each).  
+	可調整的波形數據暫存長度（最大 16 通道，各 1,000,000 點）。
+- Save waveforms as PNG or CSV files.  
+	波形可存成 PNG 檔或 CSV 檔。
+- Multi-canvas display.  
+	多畫布顯示。
+- High refresh-rate rendering at 60 fps.  
+	60fps 高刷新率顯示。
+- Quickly drag specific waveform channels and cursors onto canvases.  
+	快速拖曳指定波形通道與 cursor 至畫布。
+- Customizable waveform colors.  
+	波形顏色可自定義。
+- Flexible X/Y axis controls: auto-fit, free panning, and box zoom.  
+	彈性的 X 軸與 Y 軸：auto-fit、自由拖曳、自由框選放大。
+- Configurable target parameters for field tuning and command dispatch.  
+	可規劃受監控者的參數（用於現場調試、命令下達）。
+- ASCII string log (similar to print output).  
+	ASCII string log（相當於 print）。
+
 ## Why
 The design philosophy is smooth interaction, simplicity, and practicality above all.  
 設計理念是流暢的操作、簡單與實用性至上  
 
 
 ## Current state
-This project is currently under development. The release date of the first version is still uncertain, but it is estimated to be around **2026/01** (I’m developing it during my spare time).  
-此專案目前正在開發中，第一版本發布時間不確定，預估 **2026/01** 左右（我正利用零碎時間開發）。
-
-The source code will be released under the MIT license, and you are free to fork it.  
-屆時將以 MIT 授權公開原始碼，請隨意 fork。
+Version 1.0 is now released, and the source code is available under the MIT license. Feel free to fork it.  
+1.0 版現已發布，原始碼以 MIT 授權公開，請隨意 fork。
 
 This is purely a hobby project, and it follows an **“extreme function-oriented development”** style.  
 這純粹是一個業餘項目，並且是 **「極致的功能導向開發」**。
@@ -43,9 +68,3 @@ You may make feature requests — but I cannot promise anything.
 
 (Life is short. Enjoy it. Spend more time with your family.)  
 （人生苦短，請及時行樂，多陪伴家人。）  
-
-
-## TODO (by priority)
-1. Complete core features and release the first version  
-2. Write documents such as intro, features, spec, and architecture  
-3. Add support for various communication protocols (TCP, UDP, CAN, etc.)  
