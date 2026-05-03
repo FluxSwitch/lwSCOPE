@@ -659,6 +659,13 @@ class LogicHandle:
                 dprint(f"[DEBUG] Param read response but no pending read request, discarding.")
                 self.protocol_stats.total_success_received_packet += 1
                 return
+            # 驗證 addr 是否與 pending 中的 addr 一致，防止接受 stale 延遲回應
+            if addr != pending.get("addr_int"):
+                ts = time.strftime('%H:%M:%S', time.localtime())
+                if ENABLE_PROTOCOL_LOG:
+                    self.push_log(f"[{ts}][PR] Stale read response discarded: resp_addr={addr_str}, pending_addr=0x{pending.get('addr_int', 0):04X}")
+                self.protocol_stats.dropped_packet += 1
+                return
             self._pending_pr_read_request = None
             if func_code == 0xFF:
                 # Read response (success)
@@ -683,6 +690,13 @@ class LogicHandle:
             if pending is None:
                 dprint(f"[DEBUG] Param write response but no pending write request, discarding.")
                 self.protocol_stats.total_success_received_packet += 1
+                return
+            # 驗證 addr 是否與 pending 中的 addr 一致，防止接受 stale 延遲回應
+            if addr != pending.get("addr_int"):
+                ts = time.strftime('%H:%M:%S', time.localtime())
+                if ENABLE_PROTOCOL_LOG:
+                    self.push_log(f"[{ts}][PR] Stale write response discarded: resp_addr={addr_str}, pending_addr=0x{pending.get('addr_int', 0):04X}")
+                self.protocol_stats.dropped_packet += 1
                 return
             self._pending_pr_write_request = None
             if func_code == 0xAA:
@@ -864,6 +878,12 @@ class LogicHandle:
                 parts = msg.payload.split(",") if isinstance(msg.payload, str) else []
                 addr = parts[0] if len(parts) >= 1 else str(msg.payload)
                 type_str = parts[1] if len(parts) >= 2 else "U16"
+                # 防守性保護：已有 pending read request 時不應再收到新請求。
+                # 在現有展稷下 (GUI 單執行緒一問一答) 此情況不應發生，若發生則為上層 bug。
+                if self._pending_pr_read_request is not None:
+                    ts = time.strftime('%H:%M:%S', time.localtime())
+                    self.push_log(f"[{ts}][PR][ERROR] GET_PR_VALUE REQUEST received while read already pending (msg_ID={msg.msg_ID}), discarding.")
+                    continue
                 if self.selected_com_port == "Demo Port" and self.comm_status == "Started":
                     # Demo: 隨機讓某些請求不回應（模擬 timeout）
                     if self._rng.random() < 0.3:
@@ -889,7 +909,7 @@ class LogicHandle:
                     pkt = self._build_param_packet(0x00, type_code, addr_int, b'\x00\x00\x00\x00')
                     sent = self._send_serial_bytes(pkt)
                     if sent:
-                        self._pending_pr_read_request = {"msg_ID": msg.msg_ID, "msg_type": "GET_PR_VALUE", "ts": time.perf_counter(), "pkt": pkt, "retries": 0}
+                        self._pending_pr_read_request = {"msg_ID": msg.msg_ID, "msg_type": "GET_PR_VALUE", "ts": time.perf_counter(), "pkt": pkt, "retries": 0, "addr_int": addr_int}
                         self.protocol_stats.total_success_transmitted_packet += 1
                         ts = time.strftime('%H:%M:%S', time.localtime())
                         if ENABLE_PROTOCOL_LOG:
@@ -909,6 +929,12 @@ class LogicHandle:
                 addr = parts[0] if len(parts) >= 1 else ""
                 type_str = parts[1] if len(parts) >= 2 else "U16"
                 value_str = parts[2] if len(parts) >= 3 else "0"
+                # 防守性保護：已有 pending write request 時不應再收到新請求。
+                # 在現有展稷下 (GUI 單執行緒一問一答) 此情況不應發生，若發生則為上層 bug。
+                if self._pending_pr_write_request is not None:
+                    ts = time.strftime('%H:%M:%S', time.localtime())
+                    self.push_log(f"[{ts}][PR][ERROR] SET_PR_VALUE REQUEST received while write already pending (msg_ID={msg.msg_ID}), discarding.")
+                    continue
                 if self.selected_com_port == "Demo Port" and self.comm_status == "Started":
                     try:
                         dprint(f"[Logic] SET_PR_VALUE received: {msg.payload}")
@@ -937,7 +963,7 @@ class LogicHandle:
                     pkt = self._build_param_packet(0x55, type_code, addr_int, data_bytes)
                     sent = self._send_serial_bytes(pkt)
                     if sent:
-                        self._pending_pr_write_request = {"msg_ID": msg.msg_ID, "msg_type": "SET_PR_VALUE", "ts": time.perf_counter(), "pkt": pkt, "retries": 0}
+                        self._pending_pr_write_request = {"msg_ID": msg.msg_ID, "msg_type": "SET_PR_VALUE", "ts": time.perf_counter(), "pkt": pkt, "retries": 0, "addr_int": addr_int}
                         self.protocol_stats.total_success_transmitted_packet += 1
                         ts = time.strftime('%H:%M:%S', time.localtime())
                         if ENABLE_PROTOCOL_LOG:
