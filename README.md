@@ -11,8 +11,8 @@ https://github.com/user-attachments/assets/db268672-d38c-46f9-9661-d5a76764633a
 - Data exchange over UART with customizable baud rate and frame format.  
 	以 UART 通訊進行數據交換，通訊速率與格式可自定義。
 - Communication protocol with CRC validation (includes Arduino demo code).  
-	採用含 CRC 校驗的通訊協定（附帶 Arduino 的 demo code）。
-	For protocol definitions, see the Draw.io file in the Protocols folder.
+	採用含 CRC 校驗的通訊協定（附帶 Arduino 的 demo code）。  
+	For protocol definitions, see the Draw.io file in the Protocols folder.  
 	通訊協定定義請見Protocols folder中定義的drawio檔
 - Communication health statistics for monitoring.  
 	提供通訊健康程度的統計訊息供監看。
