@@ -3565,7 +3565,7 @@ class UIHandle:
     def _set_param_row_highlight(self, row_idx: int, status: str):
         """設定參數表某列 Read 欄底色 (success=黃色, timeout=暗紅色)"""
         if status == "success":
-            color = (80, 80, 0, 100)
+            color = (120, 120, 0, 200)
         elif status == "timeout":
             color = (120, 20, 20, 150)
         else:
